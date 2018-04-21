@@ -47,7 +47,16 @@ if __name__ == '__main__':
     solid_notes_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in solid_notes_positions]
     half_notes_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in half_notes_positions]
     whole_notes_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in whole_notes_positions]
-    
+
+    all_notes = []
+    for i, lines in enumerate(lines_positions):
+        solid_notes = get_notes_pitches(lines, solid_notes_positions[i])
+        half_notes = get_notes_pitches(lines, half_notes_positions[i])
+        whole_notes = get_notes_pitches(lines, whole_notes_positions[i])
+        staff_notes = solid_notes + half_notes + whole_notes
+        staff_notes = sorted(staff_notes, key=lambda note: note.box.x)
+        all_notes.append(staff_notes)
+    print(all_notes)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
