@@ -36,14 +36,18 @@ if __name__ == '__main__':
     # if img.shape[0] > 1400 or img.shape[1] > 1400:
     #      img = cv2.resize(img, None, fx=0.4, fy=0.4, interpolation=cv2.INTER_CUBIC)
 
-    staffs = get_staffs(img, verbose=True)
+    staffs = get_staffs(img, verbose=False)
     staves = remove_staves(img, staffs, verbose=False)
-    lines = detect_lines(img, staves, staffs, verbose=True)
+    lines_positions = detect_lines(img, staves, staffs, verbose=False)
 
-    solid_notes_positions = detect(img, staffs, solid_note_templates, 0.71, verbose=True)
-    half_notes_positions = detect(img, staffs, half_note_templates, 0.71, verbose=True)
-    whole_notes_positions = detect(img, staffs, whole_note_templates, 0.71, verbose=True)
+    solid_notes_positions = detect(img, staffs, solid_note_templates, 0.71, verbose=False)
+    half_notes_positions = detect(img, staffs, half_note_templates, 0.71, verbose=False)
+    whole_notes_positions = detect(img, staffs, whole_note_templates, 0.71, verbose=False)
 
+    solid_notes_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in solid_notes_positions]
+    half_notes_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in half_notes_positions]
+    whole_notes_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in whole_notes_positions]
+    
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()

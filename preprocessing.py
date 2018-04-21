@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from bound import BoundingBox
+from note import Note
 
 import glob
 import imutils
@@ -136,19 +137,18 @@ def detect_lines(img, staves, staff_positions, verbose=False):
 	"""
 
 	img_copy = np.copy(img)
-	staves_num = 5 * len(staff_positions)
 	lines_pos = []
 	for stave, staff in zip(staves, staff_positions):
 		lines = list((ind + staff.y, val) for ind, val in enumerate(stave.sum(axis=1)))
 		lines = sorted(lines, key=lambda x: x[1], reverse=True)[:5]
-		lines_pos.append(lines)
+		lines_pos.append([l[0] for l in lines])
 
 	if (verbose):
 		points = []
 		for lines in lines_pos:
 			for line in lines:
-				points.append([0, line[0]])
-				points.append([img_copy.shape[1], line[0]])
+				points.append([0, line])
+				points.append([img_copy.shape[1], line])
 		points = np.array(points).reshape((-1, 2, 2))
 		cv2.polylines(img_copy, points, False, (0, 0, 255), 1)
 		cv2.imshow('Detected lines', img_copy)
@@ -239,6 +239,10 @@ def detect(img, staffs, templates, threshold, verbose=False, color=(0, 255, 0)):
 
 
 def merge_boxes(bounding_boxes, threshold):
+	"""
+	Merge bounding boxes that overlap each over
+	"""
+
 	filtered_boxes = []
 	bounding_boxes = bounding_boxes.tolist()
 	while len(bounding_boxes) > 0:
@@ -261,3 +265,23 @@ def merge_boxes(bounding_boxes, threshold):
 	return filtered_boxes
 
 
+def get_notes_pitches(lines_pos, notes_boxes):
+	"""
+
+	:param img:
+	:param staffs:
+	:param lines_pos:
+	:param notes_pos:
+	:return:
+	"""
+
+	notes = []
+	gap_height = (lines_pos[1] - lines_pos[0]) / 2
+	middle = lines_pos[1] + gap_height
+	for note_box in notes_boxes:
+		note_ind = int((note_box.middle[1] - middle) / gap_height)
+		label = Note.NOTES[note_ind][0]
+		pitch = Note.NOTES[note_ind][1]
+		notes.append(Note(label, pitch, note_box))
+
+	return notes
