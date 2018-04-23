@@ -9,10 +9,14 @@ from bound import BoundingBox
 
 if __name__ == '__main__':
     img_path = 'samples/star.png'
-    crop_path = 'cropped/cropstaff_0.png'
+
+    sharp_paths = ['templates/sharp-1.png',
+                   'templates/sharp-2.png']
+
+    flat_paths = ['templates/flat-1.png']
 
     solid_note_paths = ['templates/solid-note-1.png',
-                        'templates/solid-note-1.png']
+                        'templates/solid-note-2.png']
 
     half_note_paths = ['templates/half-note-1.png',
                        'templates/half-note-2.png',
@@ -24,10 +28,11 @@ if __name__ == '__main__':
                         'templates/whole-note-3.png',
                         'templates/whole-note-4.png']
 
+    sharp_templates = [cv2.imread(template_path, 0) for template_path in sharp_paths]
+    flat_templates = [cv2.imread(template_path, 0) for template_path in flat_paths]
     solid_note_templates = [cv2.imread(template_path, 0) for template_path in solid_note_paths]
     half_note_templates = [cv2.imread(template_path, 0) for template_path in half_note_paths]
     whole_note_templates = [cv2.imread(template_path, 0) for template_path in whole_note_paths]
-
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
 
     if img is None:
@@ -40,6 +45,8 @@ if __name__ == '__main__':
     staves = remove_staves(img, staffs, verbose=False)
     lines_positions = detect_lines(img, staves, staffs, verbose=False)
 
+    sharp_positions = detect(img, staffs, sharp_templates, 0.71, verbose=True)
+    flat_positions = detect(img, staffs, flat_templates, 0.80, verbose=True)
     solid_notes_positions = detect(img, staffs, solid_note_templates, 0.71, verbose=False)
     half_notes_positions = detect(img, staffs, half_note_templates, 0.71, verbose=False)
     whole_notes_positions = detect(img, staffs, whole_note_templates, 0.71, verbose=False)

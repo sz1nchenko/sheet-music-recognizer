@@ -136,7 +136,7 @@ def fit_matching(img, templates, threshold, verbose=False):
     best_scale = 1
     w = h = 0
 
-    for scale in [i / 100.0 for i in range(30, 300, 10)]:
+    for scale in [i / 100.0 for i in range(30, 150, 3)]:
         positions_count = 0
         positions = []
         for template in templates:
