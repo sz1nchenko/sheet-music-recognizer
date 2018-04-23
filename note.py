@@ -27,11 +27,11 @@ class Note(object):
         17: ("f2", 53)
     }
 
-    def __init__(self, label, pitch, box):
+    def __init__(self, label, pitch, duration, box):
         self.label = label
         self.pitch = pitch
-        self.duration = None
+        self.duration = duration
         self.box = box
 
     def __repr__(self):
-        return "({}: {})".format(self.label, self.pitch)
+        return "(Note: {}, pitch: {}, duration: {})".format(self.label, self.pitch, self.duration)

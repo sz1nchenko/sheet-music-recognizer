@@ -50,13 +50,15 @@ if __name__ == '__main__':
 
     all_notes = []
     for i, lines in enumerate(lines_positions):
-        solid_notes = get_notes_pitches(lines, solid_notes_positions[i])
-        half_notes = get_notes_pitches(lines, half_notes_positions[i])
-        whole_notes = get_notes_pitches(lines, whole_notes_positions[i])
+        solid_notes = get_pitches(lines, solid_notes_positions[i], 1)
+        half_notes = get_pitches(lines, half_notes_positions[i], 2)
+        whole_notes = get_pitches(lines, whole_notes_positions[i], 4)
         staff_notes = solid_notes + half_notes + whole_notes
         staff_notes = sorted(staff_notes, key=lambda note: note.box.x)
-        all_notes.append(staff_notes)
-    print(all_notes)
+        all_notes.extend(staff_notes)
+
+    convert_to_midi(all_notes)
+
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
