@@ -7,7 +7,7 @@ from preprocessing import *
 from bound import BoundingBox
 
 
-if __name__ == '__main__':
+def main():
     img_path = 'samples/star.png'
 
     sharp_paths = ['templates/sharp-1.png',
@@ -45,27 +45,33 @@ if __name__ == '__main__':
     staves = remove_staves(img, staffs, verbose=False)
     lines_positions = detect_lines(img, staves, staffs, verbose=False)
 
-    sharp_positions = detect(img, staffs, sharp_templates, 0.71, verbose=True)
-    flat_positions = detect(img, staffs, flat_templates, 0.80, verbose=True)
+    sharp_positions = detect(img, staffs, sharp_templates, 0.71, verbose=False)
+    # flat_positions = detect(img, staffs, flat_templates, 0.90, verbose=False)
     solid_notes_positions = detect(img, staffs, solid_note_templates, 0.71, verbose=False)
     half_notes_positions = detect(img, staffs, half_note_templates, 0.71, verbose=False)
     whole_notes_positions = detect(img, staffs, whole_note_templates, 0.71, verbose=False)
 
+    sharp_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in sharp_positions]
+    # flat_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in flat_positions]
     solid_notes_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in solid_notes_positions]
     half_notes_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in half_notes_positions]
     whole_notes_positions = [merge_boxes(bounding_boxes, 0.5) for bounding_boxes in whole_notes_positions]
 
     all_notes = []
     for i, lines in enumerate(lines_positions):
-        solid_notes = get_pitches(lines, solid_notes_positions[i], 1)
-        half_notes = get_pitches(lines, half_notes_positions[i], 2)
-        whole_notes = get_pitches(lines, whole_notes_positions[i], 4)
+        sharp_notes = get_pitches(lines, sharp_positions[i])
+        solid_notes = get_pitches(lines, solid_notes_positions[i], sharp_notes, duration=1)
+        half_notes = get_pitches(lines, half_notes_positions[i], sharp_notes, duration=2)
+        whole_notes = get_pitches(lines, whole_notes_positions[i], sharp_notes, duration=4)
         staff_notes = solid_notes + half_notes + whole_notes
         staff_notes = sorted(staff_notes, key=lambda note: note.box.x)
         all_notes.extend(staff_notes)
 
     convert_to_midi(all_notes)
 
-
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+if __name__ == '__main__':
+    main()

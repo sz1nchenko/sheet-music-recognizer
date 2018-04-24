@@ -234,13 +234,15 @@ def merge_boxes(bounding_boxes, threshold):
     return filtered_boxes
 
 
-def get_pitches(lines_pos, notes_boxes, duration):
+def get_pitches(lines_pos, notes_boxes, sharp_notes=None, flat_notes=None, duration=None):
     """
 	Return list of Note objects.
 	:param lines_pos: y-coordinate of the lines
 	:param notes_boxes: list of notes bounding boxes
+	:param sharp_notes: list of sharps
+	:param flat_notes: list of flats
 	:param duration: duration of notes
-	:return:
+	:return: list of Note objects
 	"""
 
     notes = []
@@ -250,6 +252,14 @@ def get_pitches(lines_pos, notes_boxes, duration):
         note_ind = int((note_box.middle[1] - middle) / gap_height)
         label = Note.NOTES[note_ind][0]
         pitch = Note.NOTES[note_ind][1]
+        if sharp_notes:
+            if any(sharp.label[0] == label[0] for sharp in sharp_notes):
+                label += '#'
+                pitch += 1
+        if flat_notes:
+            if any(flat.label[0] == label[0] for flat in flat_notes):
+                label += 'b'
+                pitch -= 1
         notes.append(Note(label, pitch, duration, note_box))
 
     return notes
