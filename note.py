@@ -3,6 +3,9 @@ from bound import BoundingBox
 
 class Note(object):
     NOTES = {
+        -7: ("c6", 84),
+        -6: ("b5", 83),
+        -5: ("a5", 81),
         -4: ("g5", 79),
         -3: ("f5", 77),
         -2: ("e5", 76),
@@ -24,7 +27,12 @@ class Note(object):
         14: ("c3", 48),
         15: ("b2", 47),
         16: ("a2", 45),
-        17: ("f2", 53)
+        17: ("g2", 43),
+        18: ("f2", 41),
+        19: ("e2", 40),
+        20: ("d2", 38),
+        21: ("c2", 36),
+        22: ("b1", 35)
     }
 
     def __init__(self, label, pitch, duration, box):

@@ -3,7 +3,7 @@ import numpy as np
 from bound import BoundingBox
 from note import Note
 from midiutil import MIDIFile
-
+from matplotlib import pyplot as plt
 
 def get_staffs(img, verbose=False):
     """
@@ -47,6 +47,7 @@ def get_staffs(img, verbose=False):
     if verbose:
         # display image with contours
         cv2.imshow('Staffs detection', img_copy)
+        cv2.waitKey(0)
 
     return list(reversed(staffs))
 
@@ -64,7 +65,7 @@ def remove_staves(img, staffs, verbose=False):
 
     # Apply adaptiveThreshold at the bitwise_not of gray
     img_gray = cv2.bitwise_not(img_gray)
-    bw = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 15, -2)
+    _, bw = cv2.threshold(img_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     staves = []
     i = 1
@@ -86,8 +87,9 @@ def remove_staves(img, staffs, verbose=False):
         staves.append(horizontal)
 
         if verbose:
-            cv2.imshow('Stave' + str(i), horizontal)
             i += 1
+            cv2.imshow('Stave' + str(i), horizontal)
+            cv2.waitKey(0)
 
     return staves
 
@@ -118,6 +120,7 @@ def detect_lines(img, staves, staffs, verbose=False):
         points = np.array(points).reshape((-1, 2, 2))
         cv2.polylines(img_copy, points, False, (0, 0, 255), 1)
         cv2.imshow('Detected lines', img_copy)
+        cv2.waitKey(0)
 
     return lines_pos
 
@@ -135,8 +138,7 @@ def fit_matching(img, templates, threshold, verbose=False):
     best_positions = []
     best_scale = 1
     w = h = 0
-
-    for scale in [i / 100.0 for i in range(30, 150, 3)]:
+    for scale in [i / 100.0 for i in range(30, 100, 3)]:
         positions_count = 0
         positions = []
         for template in templates:
@@ -160,6 +162,8 @@ def fit_matching(img, templates, threshold, verbose=False):
         for pt in best_positions:
             cv2.rectangle(img, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 1)
         cv2.imshow('Matching', img)
+        cv2.waitKey(0)
+
     return best_positions, best_scale
 
 
@@ -234,7 +238,7 @@ def merge_boxes(bounding_boxes, threshold):
     return filtered_boxes
 
 
-def get_pitches(lines_pos, notes_boxes, sharp_notes=None, flat_notes=None, duration=None):
+def get_pitches(staff, lines_pos, notes_boxes, sharp_notes=None, flat_notes=None, duration=None):
     """
 	Return list of Note objects.
 	:param lines_pos: y-coordinate of the lines
@@ -249,18 +253,20 @@ def get_pitches(lines_pos, notes_boxes, sharp_notes=None, flat_notes=None, durat
     gap_height = (lines_pos[1] - lines_pos[0]) / 2
     middle = lines_pos[1] + gap_height
     for note_box in notes_boxes:
+        v = (note_box.middle[1] - middle) / gap_height
         note_ind = int((note_box.middle[1] - middle) / gap_height)
-        label = Note.NOTES[note_ind][0]
-        pitch = Note.NOTES[note_ind][1]
-        if sharp_notes:
-            if any(sharp.label[0] == label[0] for sharp in sharp_notes):
-                label += '#'
-                pitch += 1
-        if flat_notes:
-            if any(flat.label[0] == label[0] for flat in flat_notes):
-                label += 'b'
-                pitch -= 1
-        notes.append(Note(label, pitch, duration, note_box))
+        if note_ind in Note.NOTES.keys():
+            label = Note.NOTES[note_ind][0]
+            pitch = Note.NOTES[note_ind][1]
+            if sharp_notes:
+                if any(sharp.label[0] == label[0] for sharp in sharp_notes):
+                    label += '#'
+                    pitch += 1
+            if flat_notes:
+                if any(flat.label[0] == label[0] for flat in flat_notes):
+                    label += 'b'
+                    pitch -= 1
+            notes.append(Note(label, pitch, duration, note_box))
 
     return notes
 
@@ -287,3 +293,38 @@ def convert_to_midi(notes):
 
     with open("results/melody.mid", "wb") as output_file:
         midi_file.writeFile(output_file)
+
+
+def search_staffs(img, verbose=True):
+
+    img_copy = np.copy(img)
+    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    bw = cv2.bitwise_not(img_gray)
+    thresh = cv2.adaptiveThreshold(bw, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, -2)
+    # cv2.imshow("Thresh", thresh)
+    # cv2.imshow("BW", bw)
+    # cv2.waitKey(0)
+
+    horizontal_sum = np.sum(thresh, axis=1)
+    # print(horizontal_sum)
+    y = np.arange(0, len(horizontal_sum), 1)
+    # plt.plot(horizontal_sum, y)
+    # plt.show()
+
+    peaks = [(pos, val) for pos, val in zip(y, horizontal_sum)]
+    peaks.sort(key=lambda x: x[1], reverse=True)
+    print(peaks)
+
+    thresh = cv2.bitwise_not(thresh)
+
+
+    # print(thresh)
+    for i in range(1, thresh.shape[0] - 1):
+        for j in range(thresh.shape[1]):
+            if thresh[i][j] == 0 and thresh[i - 1][j] == 255 and thresh[i + 1][j]:
+                thresh[i][j] = 255
+
+    cv2.imshow("Thresh", thresh)
+    cv2.waitKey(0)
+
+    return thresh
