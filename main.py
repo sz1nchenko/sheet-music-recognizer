@@ -8,7 +8,7 @@ from bound import BoundingBox
 
 
 def main():
-    img_path = 'samples/believe.png'
+    img_path = 'samples/star.png'
 
     sharp_paths = ['templates/sharp-1.png',
                    'templates/sharp-2.png']
