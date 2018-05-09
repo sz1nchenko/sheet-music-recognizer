@@ -1,9 +1,23 @@
 import cv2
 import numpy as np
-from bound import BoundingBox
-from note import Note
 from midiutil import MIDIFile
 from matplotlib import pyplot as plt
+from keras.preprocessing.image import img_to_array
+from keras.models import load_model
+import pickle
+from bound import BoundingBox
+from note import Note
+
+import warnings
+warnings.filterwarnings("ignore")
+
+MODEL_NAME = "model/vggnet.model"
+LABELBIN_NAME = "model/lb.pickle"
+DURATION = {
+    "Quarter-Note": 1,
+    "Eighth-Note": 0.5,
+    "Sixteenth-Note": 0.25
+}
 
 def get_staffs(img, verbose=False):
     """
@@ -52,7 +66,7 @@ def get_staffs(img, verbose=False):
     return list(reversed(staffs))
 
 
-def remove_staves(img, staffs, verbose=False):
+def get_staves(img, staffs, verbose=False):
     """
 	Return list of staves images.
 	:param img: original image.
@@ -238,6 +252,51 @@ def merge_boxes(bounding_boxes, threshold):
     return filtered_boxes
 
 
+def preprocess_image(img):
+    img = cv2.resize(img, (96, 96))
+    img = img.astype("float") / 255.0
+    img = img_to_array(img)
+    img = np.expand_dims(img, axis=0)
+
+    return img
+
+
+def define_durations(img, staffs, notes_boxes, verbose=False):
+    img_copy = np.copy(img)
+    notes_boxes_copy = np.copy(notes_boxes)
+
+    model = load_model(MODEL_NAME)
+    lb = pickle.loads(open(LABELBIN_NAME, "rb").read())
+
+    all_durations = []
+    for i, boxes in enumerate(notes_boxes_copy):
+        y_staff = staffs[i].y
+        height = staffs[i].h
+        durations = []
+        for box in boxes:
+            box.x -= int(box.w)
+            box.w += 2 * box.w
+            box.y = y_staff
+            box.h = height
+
+            if verbose:
+                box.draw(img_copy, (255, 0, 0), 1)
+
+            note_img = img_copy[box.y:int(box.y + box.h), box.x:int(box.x + box.w)]
+            note_img = preprocess_image(note_img)
+            proba = model.predict(note_img)[0]
+            idx = np.argmax(proba)
+            label = lb.classes_[idx]
+            durations.append(DURATION[label])
+        all_durations.append(durations)
+
+    if verbose:
+        cv2.imshow("Boxes", img_copy)
+        cv2.waitKey(0)
+
+    return all_durations
+
+
 def get_pitches(staff, lines_pos, notes_boxes, sharp_notes=None, flat_notes=None, duration=None):
     """
 	Return list of Note objects.
@@ -249,10 +308,14 @@ def get_pitches(staff, lines_pos, notes_boxes, sharp_notes=None, flat_notes=None
 	:return: list of Note objects
 	"""
 
+    if type(duration) is int or duration is None:
+        duration = [duration] * len(notes_boxes)
+
     notes = []
     gap_height = (lines_pos[1] - lines_pos[0]) / 2
     middle = lines_pos[1] + gap_height
-    for note_box in notes_boxes:
+
+    for i, note_box in enumerate(notes_boxes):
         v = (note_box.middle[1] - middle) / gap_height
         note_ind = int((note_box.middle[1] - middle) / gap_height)
         if note_ind in Note.NOTES.keys():
@@ -266,7 +329,7 @@ def get_pitches(staff, lines_pos, notes_boxes, sharp_notes=None, flat_notes=None
                 if any(flat.label[0] == label[0] for flat in flat_notes):
                     label += 'b'
                     pitch -= 1
-            notes.append(Note(label, pitch, duration, note_box))
+            notes.append(Note(label, pitch, duration[i], note_box))
 
     return notes
 
