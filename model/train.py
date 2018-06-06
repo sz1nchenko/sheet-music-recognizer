@@ -7,6 +7,7 @@ from keras.preprocessing.image import img_to_array
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from neuralnetwork.smallervggnet import SmallerVGGNet
+from neuralnetwork.lenet import LeNet
 import matplotlib.pyplot as plt
 from imutils import paths
 import numpy as np
@@ -30,9 +31,9 @@ args = vars(ap.parse_args())
 
 # initialize the number of epochs to train for, initial learning rate,
 # batch size, and image dimensions
-EPOCHS = 100
+EPOCHS = 19
 INIT_LR = 1e-3
-BS = 32
+BS = 42
 IMAGE_DIMS = (96, 96, 3)
 
 # initialize the data and labels

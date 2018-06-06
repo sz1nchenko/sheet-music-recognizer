@@ -11,7 +11,7 @@ from note import Note
 import warnings
 warnings.filterwarnings("ignore")
 
-MODEL_NAME = "model/vggnet.model"
+MODEL_NAME = "model/smallvgg.model"
 LABELBIN_NAME = "model/lb.pickle"
 DURATION = {
     "Quarter-Note": 1,
@@ -31,6 +31,7 @@ def get_staffs(img, verbose=False):
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     bw = cv2.bitwise_not(img_gray)
     thresh = cv2.adaptiveThreshold(bw, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 15, -2)
+
     kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 2))
     dilation = cv2.dilate(thresh, kernel, iterations=10)
     # get contours
@@ -100,10 +101,10 @@ def get_staves(img, staffs, verbose=False):
         horizontal = cv2.dilate(horizontal, horizontal_structure)
         staves.append(horizontal)
 
-        if verbose:
-            i += 1
-            cv2.imshow('Stave' + str(i), horizontal)
-            cv2.waitKey(0)
+        # if verbose:
+        #     i += 1
+        #     cv2.imshow('Stave' + str(i), horizontal)
+        #     cv2.waitKey(0)
 
     return staves
 
@@ -280,7 +281,7 @@ def define_durations(img, staffs, notes_boxes, verbose=False):
             box.h = height
 
             if verbose:
-                box.draw(img_copy, (255, 0, 0), 1)
+                box.draw(img_copy, (200, 200, 50), 1)
 
             note_img = img_copy[box.y:int(box.y + box.h), box.x:int(box.x + box.w)]
             note_img = preprocess_image(note_img)
@@ -334,7 +335,7 @@ def get_pitches(staff, lines_pos, notes_boxes, sharp_notes=None, flat_notes=None
     return notes
 
 
-def convert_to_midi(notes):
+def convert_to_midi(notes, name):
     """
     Convert notes into MIDI file.
 	:param notes: list of notes
@@ -354,14 +355,15 @@ def convert_to_midi(notes):
         midi_file.addNote(track, channel, note.pitch, time, note.duration, volume)
         time += note.duration
 
-    with open("results/melody.mid", "wb") as output_file:
+    with open("results/{}.mid".format(name), "wb") as output_file:
         midi_file.writeFile(output_file)
 
 
-def search_staffs(img, verbose=True):
+def search_staffs(img, staffs, verbose=True):
 
-    img_copy = np.copy(img)
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_copy = img
+    cv2.imwrite("staff.png", img_copy)
+    img_gray = cv2.cvtColor(img_copy, cv2.COLOR_BGR2GRAY)
     bw = cv2.bitwise_not(img_gray)
     thresh = cv2.adaptiveThreshold(bw, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, -2)
     # cv2.imshow("Thresh", thresh)
@@ -371,12 +373,14 @@ def search_staffs(img, verbose=True):
     horizontal_sum = np.sum(thresh, axis=1)
     # print(horizontal_sum)
     y = np.arange(0, len(horizontal_sum), 1)
-    # plt.plot(horizontal_sum, y)
-    # plt.show()
+    # plt.plot(horizontal_sum, y, c='g')
+    # plt.xlabel("X")
+    # plt.ylabel("Y")
+    # plt.savefig("hproj.png")
 
     peaks = [(pos, val) for pos, val in zip(y, horizontal_sum)]
     peaks.sort(key=lambda x: x[1], reverse=True)
-    print(peaks)
+    # print(peaks)
 
     thresh = cv2.bitwise_not(thresh)
 
@@ -387,7 +391,6 @@ def search_staffs(img, verbose=True):
             if thresh[i][j] == 0 and thresh[i - 1][j] == 255 and thresh[i + 1][j]:
                 thresh[i][j] = 255
 
-    cv2.imshow("Thresh", thresh)
-    cv2.waitKey(0)
+    cv2.imwrite("removal_lines.png", thresh)
 
     return thresh

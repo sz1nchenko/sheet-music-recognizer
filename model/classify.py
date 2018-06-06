@@ -22,7 +22,7 @@ image = cv2.imread(args["image"])
 output = image.copy()
  
 # pre-process the image for classification
-image = cv2.resize(image, (96, 96))
+image = cv2.resize(image, (28, 28))
 image = image.astype("float") / 255.0
 image = img_to_array(image)
 image = np.expand_dims(image, axis=0)
@@ -47,5 +47,5 @@ cv2.putText(output, label, (10, 25),  cv2.FONT_HERSHEY_SIMPLEX,
  
 # show the output image
 print("[INFO] {}".format(label))
-cv2.imshow("Output", image)
-cv2.waitKey(0)
+# cv2.imshow("Output", image)
+# cv2.waitKey(0)
